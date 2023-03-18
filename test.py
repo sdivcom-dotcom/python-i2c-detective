@@ -24,3 +24,6 @@ for line in lines:
     addresses.extend(matches)
 
 print(addresses)
+
+for i in range(256):
+    print(hex(i)[2:].zfill(2))

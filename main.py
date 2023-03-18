@@ -191,7 +191,7 @@ df = pd.DataFrame(slovar)
 
 def lsusb_find():
     val = os.system(command_lsusb)
-    print(val)
+    #print(val)
     if val == 0:
         value = 1
     else:
@@ -206,14 +206,14 @@ def find_i2c_line():
         if val == 0:
             string = subprocess.check_output(command_find_i2c_line, shell=True)
             string = str(string)
-            print(string)
+            #print(string)
             decoded_string = string.encode().decode('unicode_escape')  # декодируем строку из байтового формата и удаляем экранирование
             pattern = r"i2c-(\d+).*"
 
             match = re.search(pattern, decoded_string)
             if match:
                 value = match.group(1)
-                print(value)
+                #print(value,type(value))
         else:
             value = 0
     else:
@@ -229,31 +229,48 @@ def final_find_address():
         addresses.extend(matches)
 
     addresses_str = " ".join(addresses)
-    print(addresses_str)
+    #print(addresses_str)
     return addresses_str
 
 
 def address_searcher():
     address = final_find_address()
     address = "0x" + address
+    #print(address)
     result = df.loc[(df["col1"] == address)]
     print(result)
+
+
+def rebounder_register():
+    command_get = "i2cget -y "
+    line = find_i2c_line()
+    address = final_find_address()
+    address = "0x" + address
+    for i in range(256):
+        hexer = hex(i)[2:].zfill(2)
+        hexer = "0x" + hexer
+        command = command_get + line + " " + address + " " + hexer
+        string = subprocess.check_output(command, shell=True)
+        string = str(string)
+        decoded_string = string.encode().decode('unicode_escape')  # декодируем строку из байтового формата и удаляем экранирование
+        decoded_string = str(decoded_string)
+        decoded_string = (decoded_string[2:6])
+        result = df.loc[(df["col3"] == hexer) & (df["col4"] == decoded_string)]
+        if not result.empty:
+            print(result)
+
+
+
 
 def final_searcher(address, register, to_reg, value):
     result = df.loc[(df["col1"] == address) & (df["col2"] == register) & (df["col3"] == to_reg) & (df["col4"] == value)]
     print(result)
 
-#def read_address():
-    
 
-
-#def read_values():
-
-
-address = "0x10"
-register = "0x10"
-to_reg = "0x0C"
-value = "0x26"
-
-#searcher(address, register, to_reg, value)
 address_searcher()
+print("\n")
+print("\n")
+print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+print("\n")
+print("\n")
+rebounder_register()
