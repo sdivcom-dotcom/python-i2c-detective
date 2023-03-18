@@ -178,6 +178,6 @@ slovar = [
 ]
 
 df = pd.DataFrame(slovar)
-search_value = "0x40"
+search_value = "0x48"
 result = df.loc[df["col1"] == search_value]
 print(result)
