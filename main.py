@@ -1,5 +1,16 @@
+import os
+import re
+import subprocess
 import pandas as pd
+
+command_lsusb = "lsusb | grep 'Silicon Labs CP2112 HID I2C Bridge'"
+command_find_i2c_line  = "i2cdetect -l | grep 'CP2112 SMBus Bridge'"
+command_find_addr = "i2cdetect -r -y "
+
+
 UnknownDevice = "Unknown Device"
+
+
 #Device  Category  From  To Reg   ID
 slovar = [
 {'name': 'ADC122C04', 'description': 'Thermocouple Amplifier', 'col1': '0x40', 'col2': '0x4F', 'col3': '0x00', 'col4': '0x00'},
@@ -176,8 +187,73 @@ slovar = [
 {'name': 'NEO-M9N', 'description': 'GPS GNSS Receiver', 'col1': '0x42', 'col2': '0x42', 'col3': '0x00', 'col4': '0x00'},
 {'name': 'ZOE-M8Q', 'description': 'GPS GNSS Receiver', 'col1': '0x42', 'col2': '0x42', 'col3': '0x00', 'col4': '0x00'}
 ]
-
 df = pd.DataFrame(slovar)
-search_value = "0x48"
-result = df.loc[df["col1"] == search_value]
-print(result)
+
+def lsusb_find():
+    val = os.system(command_lsusb)
+    print(val)
+    if val == 0:
+        value = 1
+    else:
+        value = 0
+    return value
+
+# Find i2c line cp2112
+def find_i2c_line():
+    fin = lsusb_find()
+    if fin == 1:
+        val = os.system(command_find_i2c_line)
+        if val == 0:
+            string = subprocess.check_output(command_find_i2c_line, shell=True)
+            string = str(string)
+            print(string)
+            decoded_string = string.encode().decode('unicode_escape')  # декодируем строку из байтового формата и удаляем экранирование
+            pattern = r"i2c-(\d+).*"
+
+            match = re.search(pattern, decoded_string)
+            if match:
+                value = match.group(1)
+                print(value)
+        else:
+            value = 0
+    else:
+        value = 0
+    return value
+
+def final_find_address():
+    output = subprocess.check_output(["i2cdetect","-r", "-y", "6"])
+    lines = output.decode().split("\n")[1:-1]  # пропускаем первую и последнюю строки
+    addresses = []
+    for line in lines:
+        matches = re.findall(r"\s([0-9a-f]{2})\s", line)
+        addresses.extend(matches)
+
+    addresses_str = " ".join(addresses)
+    print(addresses_str)
+    return addresses_str
+
+
+def address_searcher():
+    address = final_find_address()
+    address = "0x" + address
+    result = df.loc[(df["col1"] == address)]
+    print(result)
+
+def final_searcher(address, register, to_reg, value):
+    result = df.loc[(df["col1"] == address) & (df["col2"] == register) & (df["col3"] == to_reg) & (df["col4"] == value)]
+    print(result)
+
+#def read_address():
+    
+
+
+#def read_values():
+
+
+address = "0x10"
+register = "0x10"
+to_reg = "0x0C"
+value = "0x26"
+
+#searcher(address, register, to_reg, value)
+address_searcher()
